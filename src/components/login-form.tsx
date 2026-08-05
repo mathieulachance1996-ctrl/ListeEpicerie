@@ -99,9 +99,12 @@ export function LoginForm() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Connexion..." : "Se connecter"}
           </Button>
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/signup">Créer un compte</Link>
+          </Button>
           <p className="text-center text-sm text-muted-foreground">
             Pas encore de compte ?{" "}
-            <Link href="/signup" className="text-primary hover:underline">
+            <Link href="/signup" className="font-medium text-primary hover:underline">
               S&apos;inscrire
             </Link>
           </p>
