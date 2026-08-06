@@ -10,6 +10,7 @@ import {
 type EdamamIngredient = {
   text: string;
   food?: string;
+  foodCategory?: string;
 };
 
 type EdamamRecipe = {
@@ -23,6 +24,13 @@ type EdamamRecipe = {
 
 type EdamamSearchResponse = {
   hits?: Array<{ recipe: EdamamRecipe }>;
+  status?: string;
+  message?: string;
+};
+
+export type EdamamSearchResult = {
+  recipes: RecipeSuggestion[];
+  error?: string;
 };
 
 function getRecipeId(uri: string): string {
@@ -47,15 +55,22 @@ function isFrenchSource(source: string, title: string): boolean {
   return frenchSources.some((keyword) => combined.includes(keyword));
 }
 
+export function isEdamamConfigured(): boolean {
+  return Boolean(process.env.EDAMAM_APP_ID && process.env.EDAMAM_APP_KEY);
+}
+
 export async function searchFrenchRecipes(
   itemNames: string[]
-): Promise<RecipeSuggestion[]> {
+): Promise<EdamamSearchResult> {
   const appId = process.env.EDAMAM_APP_ID;
   const appKey = process.env.EDAMAM_APP_KEY;
 
   if (!appId || !appKey) {
-    console.warn("EDAMAM_APP_ID ou EDAMAM_APP_KEY manquant.");
-    return [];
+    return {
+      recipes: [],
+      error:
+        "Les cles API Edamam ne sont pas configurees. Ajoutez EDAMAM_APP_ID et EDAMAM_APP_KEY sur Vercel.",
+    };
   }
 
   const searchTerms = itemNames
@@ -68,25 +83,32 @@ export async function searchFrenchRecipes(
     app_id: appId,
     app_key: appKey,
     q: searchTerms.slice(0, 5).join(" "),
-    to: "40",
-    lang: "fr",
+    to: "50",
   });
 
-  for (const term of searchTerms.slice(0, 6)) {
-    params.append("ingr", term);
+  const fields = ["uri", "label", "image", "url", "source", "ingredients"];
+  for (const field of fields) {
+    params.append("field", field);
   }
 
   const response = await fetch(
     `https://api.edamam.com/api/recipes/v2?${params.toString()}`,
     {
-      next: { revalidate: 3600 },
+      cache: "no-store",
       headers: { Accept: "application/json" },
     }
   );
 
   if (!response.ok) {
-    console.error("Edamam API error:", response.status, await response.text());
-    return [];
+    const body = await response.text();
+    console.error("Edamam API error:", response.status, body);
+    return {
+      recipes: [],
+      error:
+        response.status === 401 || response.status === 403
+          ? "Cles API Edamam invalides. Verifiez EDAMAM_APP_ID et EDAMAM_APP_KEY sur Vercel."
+          : "Erreur lors de la recherche Edamam. Reessayez plus tard.",
+    };
   }
 
   const data = (await response.json()) as EdamamSearchResponse;
@@ -96,8 +118,9 @@ export async function searchFrenchRecipes(
 
   for (const hit of hits) {
     const recipe = hit.recipe;
-    const id = getRecipeId(recipe.uri);
+    if (!recipe?.ingredients?.length) continue;
 
+    const id = getRecipeId(recipe.uri);
     if (seenIds.has(id)) continue;
     seenIds.add(id);
 
@@ -123,7 +146,7 @@ export async function searchFrenchRecipes(
     });
   }
 
-  return suggestions
+  const recipes = suggestions
     .sort((a, b) => {
       const aFrench = isFrenchSource(a.source, a.title) ? 1 : 0;
       const bFrench = isFrenchSource(b.source, b.title) ? 1 : 0;
@@ -131,4 +154,6 @@ export async function searchFrenchRecipes(
       return b.matchCount - a.matchCount;
     })
     .slice(0, 8);
+
+  return { recipes };
 }

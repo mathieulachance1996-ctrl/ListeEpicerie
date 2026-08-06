@@ -58,6 +58,11 @@ export function RecipeSuggestions({ listId, itemNames }: RecipeSuggestionsProps)
       lastFetchKey.current = itemsKey;
       setRecipes(data.recipes);
       setMessage(data.message ?? null);
+      if (data.recipes.length === 0 && !data.message) {
+        setMessage(
+          "Aucune suggestion pour le moment. Verifiez vos cles Edamam sur Vercel."
+        );
+      }
     } catch {
       setError("Erreur lors de la recherche de recettes. Réessayez plus tard.");
       setRecipes([]);
@@ -143,7 +148,9 @@ export function RecipeSuggestions({ listId, itemNames }: RecipeSuggestionsProps)
           )}
 
           {!loading && !error && recipes.length === 0 && message && (
-            <p className="text-sm text-muted-foreground">{message}</p>
+            <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
+              {message}
+            </p>
           )}
 
           {!loading && recipes.length > 0 && (
