@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Save, FileDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { RecipeSuggestions } from "@/components/recipe-suggestions";
 
 export type GroceryItemData = {
   id?: string;
@@ -213,6 +214,11 @@ export function ListEditor({
           Ajouter un article
         </Button>
       </div>
+
+      <RecipeSuggestions
+        listId={listId}
+        itemNames={items.map((item) => item.name).filter((name) => name.trim())}
+      />
     </div>
   );
 }
