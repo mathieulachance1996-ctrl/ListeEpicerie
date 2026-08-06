@@ -1,11 +1,16 @@
 import { prisma } from "@/lib/db";
-import { isEdamamConfigured, searchFrenchRecipes } from "@/lib/edamam";
 import { hashItemNames } from "@/lib/ingredient-matching";
+import {
+  isQuebecRecipeSearchConfigured,
+  searchQuebecRecipes,
+} from "@/lib/quebec-recipes";
 import {
   MIN_ITEMS_FOR_SUGGESTIONS,
   type RecipeSuggestion,
   type RecipeSuggestionsResponse,
 } from "@/lib/recipe-types";
+
+const CACHE_VERSION = "quebec-v1";
 
 async function readCache(listId: string, itemsHash: string) {
   try {
@@ -13,7 +18,7 @@ async function readCache(listId: string, itemsHash: string) {
       where: { listId },
     });
 
-    if (cached && cached.itemsHash === itemsHash) {
+    if (cached && cached.itemsHash === `${CACHE_VERSION}:${itemsHash}`) {
       return cached.results as RecipeSuggestion[];
     }
   } catch (error) {
@@ -28,11 +33,20 @@ async function writeCache(
   itemsHash: string,
   recipes: RecipeSuggestion[]
 ) {
+  if (recipes.length === 0) return;
+
   try {
     await prisma.recipeSuggestionCache.upsert({
       where: { listId },
-      create: { listId, itemsHash, results: recipes },
-      update: { itemsHash, results: recipes },
+      create: {
+        listId,
+        itemsHash: `${CACHE_VERSION}:${itemsHash}`,
+        results: recipes,
+      },
+      update: {
+        itemsHash: `${CACHE_VERSION}:${itemsHash}`,
+        results: recipes,
+      },
     });
   } catch (error) {
     console.warn("Cache ecriture impossible:", error);
@@ -54,12 +68,11 @@ export async function getRecipeSuggestionsForList(
     };
   }
 
-  if (!isEdamamConfigured()) {
+  if (!isQuebecRecipeSearchConfigured()) {
     return {
       recipes: [],
       cached: false,
-      message:
-        "Configuration Edamam manquante. Ajoutez EDAMAM_APP_ID et EDAMAM_APP_KEY dans les variables d'environnement Vercel, puis redeployez.",
+      message: "Recherche de recettes quebecoises indisponible.",
     };
   }
 
@@ -72,27 +85,17 @@ export async function getRecipeSuggestionsForList(
       cached: true,
       message:
         cachedRecipes.length === 0
-          ? "Aucune recette trouvee avec 3 ingredients en commun. Essayez d'ajouter des articles plus generiques (poulet, tomate, riz...)."
+          ? "Aucune recette quebecoise correspondante. Essayez: poulet, tomate, riz, oignon."
           : undefined,
     };
   }
 
-  const { recipes, error } = await searchFrenchRecipes(validItems);
+  const { recipes, message } = await searchQuebecRecipes(validItems);
 
-  if (error) {
-    return { recipes: [], cached: false, message: error };
+  if (recipes.length > 0) {
+    await writeCache(listId, itemsHash, recipes);
+    return { recipes, cached: false };
   }
 
-  await writeCache(listId, itemsHash, recipes);
-
-  if (recipes.length === 0) {
-    return {
-      recipes: [],
-      cached: false,
-      message:
-        "Aucune recette trouvee avec 3 ingredients en commun. Essayez d'ajouter des articles plus generiques (poulet, tomate, riz, oignon, fromage...).",
-    };
-  }
-
-  return { recipes, cached: false };
+  return { recipes: [], cached: false, message };
 }

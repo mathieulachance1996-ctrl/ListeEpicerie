@@ -9,7 +9,7 @@ Plateforme de gestion de listes d'épicerie avec authentification, export PDF et
 - **Cocher en magasin** — Marquer les articles au fur et à mesure des courses
 - **Export PDF** — PDF professionnel groupé par catégorie
 - **Historique** — Consulter, rouvrir, dupliquer ou ré-exporter toutes les listes passées
-- **Suggestions de repas** — Recettes francophones suggérées selon les articles de la liste (min. 3 articles, min. 3 ingrédients en commun)
+- **Suggestions de repas** — Recettes québécoises (Ricardo Cuisine) selon les articles de la liste
 - **Mobile-friendly** — Interface responsive optimisée pour le téléphone
 
 ## Stack technique
@@ -21,7 +21,7 @@ Plateforme de gestion de listes d'épicerie avec authentification, export PDF et
 | ORM | Prisma |
 | Authentification | NextAuth.js v5 (Auth.js) — Credentials |
 | PDF | @react-pdf/renderer |
-| Recettes | [Edamam Recipe API](https://developer.edamam.com) |
+| Recettes | [Ricardo Cuisine](https://www.ricardocuisine.com) (recettes québécoises) |
 | UI | Tailwind CSS + shadcn/ui |
 
 ## Prérequis
@@ -58,18 +58,9 @@ DATABASE_URL="postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslm
 AUTH_SECRET="générez avec: openssl rand -base64 32"
 AUTH_URL="http://localhost:3000"
 NEXTAUTH_URL="http://localhost:3000"
-EDAMAM_APP_ID="your-edamam-app-id"
-EDAMAM_APP_KEY="your-edamam-app-key"
 ```
 
-#### Clé API Edamam (suggestions de repas)
-
-1. Compte sur [developer.edamam.com](https://developer.edamam.com)
-2. **Applications** → **Create Application** → **Recipe Search API**
-3. Copiez **Application ID** → `EDAMAM_APP_ID`
-4. Copiez **Application Key** → `EDAMAM_APP_KEY`
-
-Sans ces clés, l'app fonctionne mais les suggestions de repas restent vides.
+Les **suggestions de repas** utilisent [Ricardo Cuisine](https://www.ricardocuisine.com) (recettes québécoises). **Aucune clé API supplémentaire** n'est requise.
 
 ### 4. Initialiser la base de données
 
@@ -115,8 +106,6 @@ Dans **Settings → Environment Variables**, ajoutez :
 | `AUTH_SECRET` | Secret aléatoire (`openssl rand -base64 32`) |
 | `AUTH_URL` | URL Vercel (ex: `https://votre-app.vercel.app`) |
 | `NEXTAUTH_URL` | Même URL Vercel |
-| `EDAMAM_APP_ID` | Application ID Edamam |
-| `EDAMAM_APP_KEY` | Application Key Edamam |
 
 ### 4. Connecter Neon à Vercel (recommandé)
 

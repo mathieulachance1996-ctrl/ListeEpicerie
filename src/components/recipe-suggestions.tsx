@@ -114,7 +114,7 @@ export function RecipeSuggestions({ listId, itemNames }: RecipeSuggestionsProps)
               Suggestions de repas basées sur ta liste
             </CardTitle>
             <CardDescription>
-              Recettes francophones avec au moins 3 ingrédients en commun
+              Recettes quebecoises (Ricardo Cuisine) avec au moins 3 ingredients en commun
             </CardDescription>
           </div>
           <Button

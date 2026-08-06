@@ -5,6 +5,8 @@ import { getRecipeSuggestionsForList } from "@/lib/recipe-suggestions";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+export const maxDuration = 30;
+
 export async function GET(request: Request, { params }: RouteParams) {
   const session = await auth();
 
